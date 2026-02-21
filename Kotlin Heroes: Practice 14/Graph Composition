@@ -1,0 +1,80 @@
+fun main() {
+    val t = readln().toInt()
+    repeat(t) {
+        val (n, m1, m2) = readln().split(' ').map { it.toInt() }
+        val fEdges = List(m1) {
+            val (u, v) = readln().split(' ').map { it.toInt() }
+            u to v
+        }
+        val gDSU = DSU(n)
+        repeat(m2) {
+            val (u, v) = readln().split(' ').map { it.toInt() }
+            gDSU.union(u, v)
+        }
+
+        // assign each vertex a component id of G
+        val compId = IntArray(n + 1)
+        val rootToId = HashMap<Int, Int>()
+        var nextId = 0
+        for (v in 1..n) {
+            val r = gDSU.find(v)
+            compId[v] = rootToId.getOrPut(r) { nextId++ }
+        }
+
+        val fDSU = DSU(n)
+        var cross = 0
+        for ((u, v) in fEdges) {
+            if (compId[u] == compId[v]) {
+                fDSU.union(u, v)
+            } else {
+                cross++
+            }
+        }
+
+        val fRoot = IntArray(n + 1)
+        for (v in 1..n) {
+            fRoot[v] = fDSU.find(v)
+        }
+
+        val compSets = Array(nextId) { mutableSetOf<Int>() }
+        for (v in 1..n) {
+            compSets[compId[v]].add(fRoot[v])
+        }
+
+        var ans = cross
+        for (set in compSets) {
+            ans += set.size - 1
+        }
+        println(ans)
+    }
+}
+
+class DSU(n: Int) {
+    private val p = IntArray(n + 1) { it }
+    private val sz = IntArray(n + 1) { 1 }
+
+    fun find(x: Int): Int {
+        var root = x
+        while (p[root] != root) root = p[root]
+        var cur = x
+        while (cur != root) {
+            val nxt = p[cur]
+            p[cur] = root
+            cur = nxt
+        }
+        return root
+    }
+
+    fun union(a: Int, b: Int) {
+        var ra = find(a)
+        var rb = find(b)
+        if (ra == rb) return
+        if (sz[ra] < sz[rb]) {
+            val tmp = ra
+            ra = rb
+            rb = tmp
+        }
+        p[rb] = ra
+        sz[ra] += sz[rb]
+    }
+}
