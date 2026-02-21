@@ -1,0 +1,122 @@
+import java.io.BufferedReader
+import java.io.InputStreamReader
+import java.util.StringTokenizer
+
+fun main() {
+    val br = BufferedReader(InputStreamReader(System.`in`))
+    val t = br.readLine().trim().toInt()
+    val sb = StringBuilder()
+
+    repeat(t) {
+        var st = StringTokenizer(br.readLine())
+        val n = st.nextToken().toInt()
+        val m = st.nextToken().toInt()
+
+        val eu = IntArray(m)
+        val ev = IntArray(m)
+        val ew = IntArray(m)
+        // adjacency: adjV[u] = list of neighbor vertices, adjI[u] = list of edge indices
+        val adjV = Array(n + 1) { mutableListOf<Int>() }
+        val adjI = Array(n + 1) { mutableListOf<Int>() }
+
+        repeat(m) { i ->
+            st = StringTokenizer(br.readLine())
+            eu[i] = st.nextToken().toInt()
+            ev[i] = st.nextToken().toInt()
+            ew[i] = st.nextToken().toInt()
+            adjV[eu[i]].add(ev[i]); adjI[eu[i]].add(i)
+            adjV[ev[i]].add(eu[i]); adjI[ev[i]].add(i)
+        }
+
+        // --- Iterative Tarjan's Bridge Finding ---
+        val disc = IntArray(n + 1) { -1 }
+        val low  = IntArray(n + 1)
+        val isBridge = BooleanArray(m)
+        var timer = 0
+
+        // Manual stack to avoid recursion stack overflow
+        val stkU  = IntArray(n + 1)
+        val stkPE = IntArray(n + 1)  // parent edge index
+        val stkCI = IntArray(n + 1)  // child iterator index
+
+        for (start in 1..n) {
+            if (disc[start] != -1) continue
+            var top = 0
+            stkU[0] = start; stkPE[0] = -1; stkCI[0] = 0
+            disc[start] = timer; low[start] = timer++
+
+            while (top >= 0) {
+                val u  = stkU[top]
+                val ci = stkCI[top]
+                if (ci < adjV[u].size) {
+                    stkCI[top]++
+                    val v   = adjV[u][ci]
+                    val idx = adjI[u][ci]
+                    if (idx == stkPE[top]) continue   // skip edge we came from
+                    if (disc[v] == -1) {
+                        // tree edge: push child
+                        top++
+                        stkU[top] = v; stkPE[top] = idx; stkCI[top] = 0
+                        disc[v] = timer; low[v] = timer++
+                    } else {
+                        // back edge: update low
+                        if (disc[v] < low[u]) low[u] = disc[v]
+                    }
+                } else {
+                    // done with u: pop and propagate low to parent
+                    top--
+                    if (top >= 0) {
+                        val p = stkU[top]
+                        if (low[u] < low[p]) low[p] = low[u]
+                        if (low[u] > disc[p]) isBridge[stkPE[top + 1]] = true
+                    }
+                }
+            }
+        }
+
+        // --- Find minimum-weight non-bridge edge ---
+        var bestIdx = -1
+        var bestW   = Int.MAX_VALUE
+        for (i in 0 until m) {
+            if (!isBridge[i] && ew[i] < bestW) { bestW = ew[i]; bestIdx = i }
+        }
+
+        val su = eu[bestIdx]
+        val sv = ev[bestIdx]
+
+        // --- BFS from su to sv, excluding bestIdx edge ---
+        val par = IntArray(n + 1) { -1 }
+        val vis = BooleanArray(n + 1)
+        val queue = IntArray(n + 1)
+        var head = 0; var tail = 0
+        queue[tail++] = su; vis[su] = true
+
+        outer@ while (head < tail) {
+            val u = queue[head++]
+            for (ci in adjV[u].indices) {
+                val v   = adjV[u][ci]
+                val idx = adjI[u][ci]
+                if (idx == bestIdx || vis[v]) continue
+                vis[v] = true
+                par[v] = u
+                if (v == sv) break@outer
+                queue[tail++] = v
+            }
+        }
+
+        // --- Reconstruct path su -> sv ---
+        val path = mutableListOf<Int>()
+        var cur = sv
+        while (cur != -1) { path.add(cur); cur = par[cur] }
+        path.reverse()
+
+        sb.append(bestW).append(' ').append(path.size).append('\n')
+        for (i in path.indices) {
+            if (i > 0) sb.append(' ')
+            sb.append(path[i])
+        }
+        sb.append('\n')
+    }
+
+    print(sb)
+}
