@@ -1,0 +1,27 @@
+fun main() {
+    val t = readln().toInt()
+    val out = StringBuilder()
+    repeat(t) {
+        val (n, m, k) = readln().split(' ').map { it.toInt() }
+        val a = readln().split(' ').map { it.toInt() }
+        val q = readln().split(' ').map { it.toInt() }
+        when {
+            k == n -> out.append("1".repeat(m))
+            k < n - 1 -> out.append("0".repeat(m))
+            else -> {
+                var missing = 1
+                var idx = 0
+                for (x in 1..n) {
+                    if (idx < k && q[idx] == x) idx++
+                    else {
+                        missing = x
+                        break
+                    }
+                }
+                a.forEach { out.append(if (it == missing) '1' else '0') }
+            }
+        }
+        out.append('\n')
+    }
+    print(out)
+}
