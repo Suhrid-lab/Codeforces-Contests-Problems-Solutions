@@ -1,0 +1,36 @@
+fun main() {
+    val t = readln().toInt()
+    val out = StringBuilder()
+    repeat(t) {
+        val (n, s, x) = readln().split(' ').map { it.toLong() }
+        val m = n.toInt()
+        val a = readln().split(' ').map { it.toLong() }.toLongArray()
+        val pref = LongArray(m + 1)
+        for (i in 0 until m) pref[i + 1] = pref[i] + a[i]
+
+        fun countLeq(bound: Long): Long {
+            var ans = 0L
+            val cnt = HashMap<Long, Int>()
+            var i = 0
+            while (i < m) {
+                if (a[i] > bound) {
+                    i++
+                    continue
+                }
+                val segStart = i
+                cnt.clear()
+                cnt[pref[segStart]] = 1
+                while (i < m && a[i] <= bound) {
+                    val cur = pref[i + 1]
+                    ans += cnt.getOrDefault(cur - s, 0)
+                    cnt[cur] = cnt.getOrDefault(cur, 0) + 1
+                    i++
+                }
+            }
+            return ans
+        }
+
+        out.appendLine(countLeq(x) - countLeq(x - 1))
+    }
+    print(out)
+}
