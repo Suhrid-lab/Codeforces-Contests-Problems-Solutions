@@ -1,0 +1,9 @@
+fun main() {
+    repeat(readln().toInt()) {
+        readln() // skip n, not needed
+        val a = readln().split(' ').map(String::toInt)
+        val freq = IntArray(21) // values are 1..n, n≤20
+        a.forEach { freq[it]++ }
+        println(freq.sumOf { it / 2 })
+    }
+}
